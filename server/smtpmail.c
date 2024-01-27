@@ -7,9 +7,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/wait.h>
-
 #define MAXSIZE 100
-void handle_client(int cli_sock, struct sockaddr_in, struct sockaddr_in);
+
+void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in serv_addr);
 int main(int argc, char* argv[]){
 	int my_port = 0;
 	if (argc==1) {
@@ -65,9 +65,9 @@ int main(int argc, char* argv[]){
 	return 0;
 }
 
-void handle_client(cli_sock, cli_addr, serv_addr){
-	char buffer[MAX];
+void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in serv_addr){
+	char buffer[MAXSIZE];
 	sprintf(buffer, "220 %s:%d Service Ready", inet_ntoa(serv_addr.sin_addr), ntohs(serv_addr.sin_port));
-	send(cli_sock, buffer, sizeof(buffer));
+	send(cli_sock, buffer, sizeof(buffer), 0);
 	return;
 }
