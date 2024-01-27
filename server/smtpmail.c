@@ -8,7 +8,8 @@
 #include <arpa/inet.h>
 #include <sys/wait.h>
 
-
+#define MAXSIZE 100
+void handle_client(int cli_sock, struct sockaddr_in, struct sockaddr_in);
 int main(int argc, char* argv[]){
 	int my_port = 0;
 	if (argc==1) {
@@ -53,7 +54,7 @@ int main(int argc, char* argv[]){
 			// child
 			close(server_socket);
 			// handle the client
-			
+			handle_client(new_socket, cli_addr, serv_addr);
 			
 			close(new_socket);
 			exit(EXIT_SUCCESS);
@@ -64,3 +65,9 @@ int main(int argc, char* argv[]){
 	return 0;
 }
 
+void handle_client(cli_sock, cli_addr, serv_addr){
+	char buffer[MAX];
+	sprintf(buffer, "220 %s:%d Service Ready", inet_ntoa(serv_addr.sin_addr), ntohs(serv_addr.sin_port));
+	send(cli_sock, buffer, sizeof(buffer));
+	return;
+}
