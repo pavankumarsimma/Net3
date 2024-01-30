@@ -67,6 +67,7 @@ int main(int argc, char* argv[]){
 
 void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in serv_addr){
 	char buffer[MAXSIZE];
+	int n;
 	printf("Accepted connection from %s.%d\n", inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port));
 	sprintf(buffer, "220 %s:%d Service Ready", inet_ntoa(serv_addr.sin_addr), ntohs(serv_addr.sin_port));
 	send(cli_sock, buffer, sizeof(buffer), 0);
@@ -78,6 +79,7 @@ void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in
 	sprintf(buffer, "250 OK Hello %s", inet_ntoa(serv_addr.sin_addr));
 	send(cli_sock, buffer, sizeof(buffer), 0);
 	printf("[-] %s\n", buffer);
-	
+
+
 	return;
 }

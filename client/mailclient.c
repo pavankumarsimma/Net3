@@ -6,7 +6,10 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <netdb.h>
 #define MAXSIZE 1000
+
+char *getLocalIP();
 int main(){
     struct sockaddr_in serv_addr;
 
@@ -36,6 +39,15 @@ int main(){
     recv(cli_sock, buffer, MAXSIZE, 0);
     printf("[+] %s\n", buffer);
 
-    
+    sprintf(buffer, "MAIL FROM %s", getLocalIP());
+    send(cli_sock, buffer, sizeof(buffer), 0);
+    printf("[-] %s\n", buffer);
     return 0;
+}
+
+char *getLocalIP() {
+    char buffer[1024];
+    gethostname(buffer, sizeof(buffer));
+    struct hostent *host = gethostbyname(buffer);
+    return inet_ntoa(*((struct in_addr *)host->h_addr_list[0]));
 }
