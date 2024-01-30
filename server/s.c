@@ -8,9 +8,11 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 #define MAXSIZE 1000
 
 char *getLocalIP();
+int directoryExists(const char *path);
 void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in serv_addr);
 int main(int argc, char* argv[]){
 	int my_port = 0;
@@ -133,8 +135,154 @@ void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in
 				printf("S: %s\n", buffer);
 			}
 		}
-		
-
+		else if (strncmp(buffer, "MAIL FROM", 9) == 0){
+			// from address
+			char from[MAXSIZE];
+			strcpy(from, &buffer[11]);
+			int ff = 0;
+			int j=0;
+			for (int i=0; i<strlen(from); i++){
+				if (from[0]=='@'){
+					break;
+				}
+				if (from[i] == '@'){
+					if (ff==0) {
+						ff = i;
+					}
+					else {
+						ff = 0;
+						break;
+					}
+				}
+				if (from[i] == '\r'){
+					j = i;
+					break;
+				}
+			}
+			if (ff==0){
+				// from address format wrong
+				status = 600;
+				memset(buffer, '\0', MAXSIZE);
+				sprintf(buffer, "%d address format wrong\r\n", status);
+				n = send(cli_sock, buffer, strlen(buffer), 0);
+				if (n<0) {
+					perror("send error");
+					exit(EXIT_FAILURE);
+				}
+				printf("S: %s\n", buffer);
+			}
+			else {
+				// correct format of from address
+				char path[MAXSIZE];
+				char user[MAXSIZE];
+				sscanf(buffer, "MAIL FROM: %s\r\n", path);
+				strcpy(from, path);
+				memset(user, '\0', MAXSIZE);
+				for (int i=0; i<strlen(path); i++){
+					if (path[i] == '@') break;
+					user[i] = path[i];
+				}
+				// printf("%s\n", user);
+				sprintf(path, "./%s", user);
+				if (directoryExists(path) == 0){
+					//  user doen't exist
+					memset(buffer, '\0', MAXSIZE);
+					status = 550;
+					sprintf(buffer, "%d No such user\r\n", status);
+					n = send(cli_sock, buffer, strlen(buffer), 0);
+					if (n < 0){
+						perror("send error");
+						exit(EXIT_FAILURE);
+					}
+					printf("S: %s\n", buffer);
+				}
+				else {
+					memset(buffer, '\0', MAXSIZE);
+					status = 250;
+					sprintf(buffer, "%d %s... Sender ok\r\n", status, from);
+					n = send(cli_sock, buffer, strlen(buffer), 0);
+					if (n < 0){
+						perror("send error");
+						exit(EXIT_FAILURE);
+					}
+					printf("S: %s\n", buffer);
+				}
+			}
+		}	
+		else if (strncmp(buffer, "RCPT TO", 7) == 0){
+			// to address
+			char to[MAXSIZE];
+			strcpy(to, &buffer[9]);
+			int ff = 0;
+			int j=0;
+			for (int i=0; i<strlen(to); i++){
+				if (to[0]=='@'){
+					break;
+				}
+				if (to[i] == '@'){
+					if (ff==0) {
+						ff = i;
+					}
+					else {
+						ff = 0;
+						break;
+					}
+				}
+				if (to[i] == '\r'){
+					j = i;
+					break;
+				}
+			}
+			if (ff==0){
+				// from address format wrong
+				status = 600;
+				memset(buffer, '\0', MAXSIZE);
+				sprintf(buffer, "%d address format wrong\r\n", status);
+				n = send(cli_sock, buffer, strlen(buffer), 0);
+				if (n<0) {
+					perror("send error");
+					exit(EXIT_FAILURE);
+				}
+				printf("S: %s\n", buffer);
+			}
+			else {
+				// correct format of from address
+				char path[MAXSIZE];
+				char user[MAXSIZE];
+				sscanf(buffer, "RCPT TO: %s\r\n", path);
+				strcpy(to, path);
+				memset(user, '\0', MAXSIZE);
+				for (int i=0; i<strlen(path); i++){
+					if (path[i] == '@') break;
+					user[i] = path[i];
+				}
+				//printf("%s\n", user);
+				sprintf(path, "./%s", user);
+				if (directoryExists(path) == 0){
+					//  user doen't exist
+					memset(buffer, '\0', MAXSIZE);
+					status = 550;
+					sprintf(buffer, "%d No such user\r\n", status);
+					n = send(cli_sock, buffer, strlen(buffer), 0);
+					if (n < 0){
+						perror("send error");
+						exit(EXIT_FAILURE);
+					}
+					printf("S: %s\n", buffer);
+				}
+				else {
+					memset(buffer, '\0', MAXSIZE);
+					status = 250;
+					sprintf(buffer, "%d root... Recipient ok\r\n", status);
+					n = send(cli_sock, buffer, strlen(buffer), 0);
+					if (n < 0){
+						perror("send error");
+						exit(EXIT_FAILURE);
+					}
+					printf("S: %s\n", buffer);
+				}
+			}
+		}
 	}
 
 	
@@ -148,6 +296,14 @@ char *getLocalIP() {
     gethostname(buffer, sizeof(buffer));
     struct hostent *host = gethostbyname(buffer);
     return inet_ntoa(*((struct in_addr *)host->h_addr_list[0]));
+}
+
+int directoryExists(const char *path) {
+    struct stat dirStat;
+    if (stat(path, &dirStat) == 0) {
+        return S_ISDIR(dirStat.st_mode);
+    }
+    return 0; // Directory doesn't exist or there was an error
 }
 
 /*
