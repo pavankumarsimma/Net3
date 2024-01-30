@@ -6,9 +6,11 @@
 #include <unistd.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 #include <sys/wait.h>
 #define MAXSIZE 1000
 
+char *getLocalIP();
 void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in serv_addr);
 int main(int argc, char* argv[]){
 	int my_port = 0;
@@ -69,15 +71,86 @@ void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in
 	char buffer[MAXSIZE];
 	int n;
 	printf("Accepted connection from %s.%d\n", inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port));
-
+	int status = 220;
 	memset(buffer, '\0', MAXSIZE);
-	sprintf(buffer, "220 %s Service Ready\r\n", inet_ntoa(serv_addr.sin_addr));
+	sprintf(buffer, "%d %s Service Ready\r\n", status, getLocalIP());
 	n = send(cli_sock, buffer, strlen(buffer), 0);
 	if (n<0) {
-		perror("send - recv error");
+		perror("send error");
 		exit(EXIT_FAILURE);
 	}
 	printf("S:  %s\n", buffer);
+	char * localIP = getLocalIP();
+	int flag=1;
+	while(flag == 1){
+		// request from client
+		memset(buffer, '\0', MAXSIZE);
+		n = recv(cli_sock, buffer, MAXSIZE, 0);
+		if (n<0) {
+			perror("recv error");
+			exit(EXIT_FAILURE);
+		}
+		printf("C: %s\n", buffer);
+
+		// response to client
+		if (strncmp(buffer, "QUIT", 4)==0){
+			memset(buffer, '\0', MAXSIZE);
+			status = 221;
+			sprintf(buffer, "%d %s closing connection\r\n", status, localIP);
+			n = send(cli_sock, buffer, strlen(buffer), 0);
+			if (n<0) {
+				perror("send error");
+				exit(EXIT_FAILURE);
+			}
+			printf("S:  %s\n", buffer);
+			flag = 0;
+		}
+		else if (strncmp(buffer, "HELO", 4)==0){
+			char ip[MAXSIZE];
+			strcpy(ip, &buffer[5]);
+			if ( strncmp(ip, localIP, strlen(localIP)) == 0){
+				// ip ok
+				memset(buffer, '\0', MAXSIZE);
+				status = 250;
+				sprintf(buffer, "%d OK Hello %s\r\n", status, localIP);
+				n = send(cli_sock, buffer, strlen(buffer), 0);
+				if(n <0 ){
+					perror("send error");
+					exit(EXIT_FAILURE);
+				}
+				printf("S: %s\n", buffer);
+			}
+			else {
+				// wrong server address
+				status = 600;
+				memset(buffer, '\0', MAXSIZE);
+				sprintf(buffer, "%d Wrong server address\r\n", status);
+				n = send(cli_sock, buffer, strlen(buffer), 0);
+				if (n<0) {
+					perror("send error");
+					exit(EXIT_FAILURE);
+				}
+				printf("S: %s\n", buffer);
+			}
+		}
+		
+
+	}
+
+	
+	return;
+}
+
+
+
+char *getLocalIP() {
+    char buffer[1024];
+    gethostname(buffer, sizeof(buffer));
+    struct hostent *host = gethostbyname(buffer);
+    return inet_ntoa(*((struct in_addr *)host->h_addr_list[0]));
+}
+
+/*
 
 	memset(buffer, '\0', MAXSIZE);
 	n = recv(cli_sock, buffer, MAXSIZE, 0);
@@ -134,6 +207,4 @@ void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in
 	}
 	printf("S:  %s\n", buffer);
 
-
-	return;
-}
+*/
