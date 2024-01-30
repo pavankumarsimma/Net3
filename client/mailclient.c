@@ -39,7 +39,7 @@ int main(){
     printf("[+] %s\n", buffer);
 
     memset(buffer, '\0', MAXSIZE);
-    sprintf(buffer, "HELO %s.%d", inet_ntoa(serv_addr.sin_addr), ntohs(serv_addr.sin_port));
+    sprintf(buffer, "HELO %s.%d\r\n", inet_ntoa(serv_addr.sin_addr), ntohs(serv_addr.sin_port));
     n = send(cli_sock, buffer, strlen(buffer), 0);
     if (n<0) {
         perror("send - recv error");
@@ -56,7 +56,7 @@ int main(){
     printf("[+] %s\n", buffer);
 
     memset(buffer, '\0', MAXSIZE);
-    sprintf(buffer, "MAIL FROM: %s", getLocalIP());
+    sprintf(buffer, "MAIL FROM: %s\r\n", getLocalIP());
     n = send(cli_sock, buffer, strlen(buffer), 0);
     if (n<0) {
         perror("send - recv error");
@@ -64,7 +64,34 @@ int main(){
     }
     printf("[-] %s\n", buffer);
 
-    
+    memset(buffer, '\0', MAXSIZE);
+    n = recv(cli_sock, buffer, MAXSIZE, 0);
+    if (n<0) {
+        perror("send - recv error");
+        exit(EXIT_FAILURE);
+    }
+    printf("[+] %s\n", buffer);
+
+    char to[MAXSIZE];
+    printf("Enter the receipient address: ");
+    scanf("%s", to);
+    memset(buffer, '\0', MAXSIZE);
+    sprintf(buffer, "RCPT TO: %s\r\n", to);
+    n = send(cli_sock, buffer, strlen(buffer), 0);
+    if (n<0) {
+        perror("send - recv error");
+        exit(EXIT_FAILURE);
+    }
+    printf("[-] %s\n", buffer);
+
+    memset(buffer, '\0', MAXSIZE);
+    n = recv(cli_sock, buffer, MAXSIZE, 0);
+    if (n<0) {
+        perror("send - recv error");
+        exit(EXIT_FAILURE);
+    }
+    printf("[+] %s\n", buffer);
+
     return 0;
 }
 

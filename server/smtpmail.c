@@ -71,7 +71,7 @@ void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in
 	printf("Accepted connection from %s.%d\n", inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port));
 
 	memset(buffer, '\0', MAXSIZE);
-	sprintf(buffer, "220 %s:%d Service Ready", inet_ntoa(serv_addr.sin_addr), ntohs(serv_addr.sin_port));
+	sprintf(buffer, "220 %s Service Ready\r\n", inet_ntoa(serv_addr.sin_addr));
 	n = send(cli_sock, buffer, strlen(buffer), 0);
 	if (n<0) {
 		perror("send - recv error");
@@ -88,7 +88,7 @@ void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in
 	printf("[+] %s\n", buffer);
 
 	memset(buffer, '\0', MAXSIZE);
-	sprintf(buffer, "250 OK Hello %s", inet_ntoa(serv_addr.sin_addr));
+	sprintf(buffer, "250 OK Hello %s\r\n", inet_ntoa(serv_addr.sin_addr));
 	n = send(cli_sock, buffer, strlen(buffer), 0);
 	if (n<0) {
 		perror("send - recv error");
@@ -104,6 +104,36 @@ void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in
 	}
 	printf("[+] %s\n", buffer);
 
-	
+	char sender[MAXSIZE];
+	sscanf(buffer, "MAIL FROM: %s\r\n", sender);
+	memset(buffer, '\0', MAXSIZE);
+	sprintf(buffer, "250 %s... Sender ok\r\n", sender);
+	n = send(cli_sock, buffer, strlen(buffer), 0);
+	if (n<0) {
+		perror("send - recv error");
+		exit(EXIT_FAILURE);
+	}
+	printf("[-] %s\n", buffer);
+
+	memset(buffer, '\0', MAXSIZE);
+	n = recv(cli_sock, buffer, MAXSIZE, 0);
+	if (n<0) {
+		perror("send - recv error");
+		exit(EXIT_FAILURE);
+	}
+	printf("[+] %s\n", buffer);
+
+	char receiver[MAXSIZE];
+	sscanf(buffer, "RCPT TO: %s\r\n", receiver);
+	memset(buffer, '\0', MAXSIZE);
+	sprintf(buffer, "250 root... Recipient ok\r\n");
+	n = send(cli_sock, buffer, strlen(buffer), 0);
+	if (n<0) {
+		perror("send - recv error");
+		exit(EXIT_FAILURE);
+	}
+	printf("[-] %s\n", buffer);
+
+
 	return;
 }
