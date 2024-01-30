@@ -71,7 +71,13 @@ void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in
 	sprintf(buffer, "220 %s:%d Service Ready", inet_ntoa(serv_addr.sin_addr), ntohs(serv_addr.sin_port));
 	send(cli_sock, buffer, sizeof(buffer), 0);
 	printf("[-] %s\n", buffer);
+
 	recv(cli_sock, buffer, MAXSIZE, 0);
 	printf("[+] %s\n", buffer);
+
+	sprintf(buffer, "250 OK Hello %s", inet_ntoa(serv_addr.sin_addr));
+	send(cli_sock, buffer, sizeof(buffer), 0);
+	printf("[-] %s\n", buffer);
+	
 	return;
 }
