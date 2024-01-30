@@ -27,5 +27,8 @@ int main(){
     printf("Connected to server\n");
     recv(cli_sock, buffer, MAXSIZE, 0);
     printf("[+] %s\n", buffer);
+    sprintf(buffer, "HELO %s.%d", inet_ntoa(serv_addr.sin_addr), ntohs(serv_addr.sin_port));
+    send(cli_sock, buffer, sizeof(buffer), 0);
+    printf("[-] %s\n", buffer);
     return 0;
 }
