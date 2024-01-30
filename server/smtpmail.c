@@ -7,7 +7,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/wait.h>
-#define MAXSIZE 100
+#define MAXSIZE 1000
 
 void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in serv_addr);
 int main(int argc, char* argv[]){
@@ -60,7 +60,7 @@ int main(int argc, char* argv[]){
 			exit(EXIT_SUCCESS);
 		}
 		close(new_socket);
-		while(wait(NULL)>0) ;
+		while(waitpid(pid, NULL, 0)>0) ;
 	}
 	return 0;
 }
@@ -69,17 +69,41 @@ void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in
 	char buffer[MAXSIZE];
 	int n;
 	printf("Accepted connection from %s.%d\n", inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port));
+
+	memset(buffer, '\0', MAXSIZE);
 	sprintf(buffer, "220 %s:%d Service Ready", inet_ntoa(serv_addr.sin_addr), ntohs(serv_addr.sin_port));
-	send(cli_sock, buffer, sizeof(buffer), 0);
+	n = send(cli_sock, buffer, strlen(buffer), 0);
+	if (n<0) {
+		perror("send - recv error");
+		exit(EXIT_FAILURE);
+	}
 	printf("[-] %s\n", buffer);
 
-	recv(cli_sock, buffer, MAXSIZE, 0);
+	memset(buffer, '\0', MAXSIZE);
+	n = recv(cli_sock, buffer, MAXSIZE, 0);
+	if (n<0) {
+		perror("send - recv error");
+		exit(EXIT_FAILURE);
+	}
 	printf("[+] %s\n", buffer);
 
+	memset(buffer, '\0', MAXSIZE);
 	sprintf(buffer, "250 OK Hello %s", inet_ntoa(serv_addr.sin_addr));
-	send(cli_sock, buffer, sizeof(buffer), 0);
+	n = send(cli_sock, buffer, strlen(buffer), 0);
+	if (n<0) {
+		perror("send - recv error");
+		exit(EXIT_FAILURE);
+	}
 	printf("[-] %s\n", buffer);
 
+	memset(buffer, '\0', MAXSIZE);
+	n = recv(cli_sock, buffer, MAXSIZE, 0);
+	if (n<0) {
+		perror("send - recv error");
+		exit(EXIT_FAILURE);
+	}
+	printf("[+] %s\n", buffer);
 
+	
 	return;
 }

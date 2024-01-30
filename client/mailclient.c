@@ -7,11 +7,12 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <netdb.h>
-#define MAXSIZE 1000
+#define MAXSIZE 100
 
 char *getLocalIP();
 int main(){
     struct sockaddr_in serv_addr;
+    int n;
 
     int cli_sock = socket(AF_INET, SOCK_STREAM, 0);
     if (cli_sock == -1){
@@ -29,19 +30,41 @@ int main(){
     char buffer[MAXSIZE];
     printf("Connected to server\n");
 
-    recv(cli_sock, buffer, MAXSIZE, 0);
+    memset(buffer, '\0', MAXSIZE);
+    n = recv(cli_sock, buffer, MAXSIZE, 0);
+    if (n<0) {
+        perror("send - recv error");
+        exit(EXIT_FAILURE);
+    }
     printf("[+] %s\n", buffer);
 
+    memset(buffer, '\0', MAXSIZE);
     sprintf(buffer, "HELO %s.%d", inet_ntoa(serv_addr.sin_addr), ntohs(serv_addr.sin_port));
-    send(cli_sock, buffer, sizeof(buffer), 0);
+    n = send(cli_sock, buffer, strlen(buffer), 0);
+    if (n<0) {
+        perror("send - recv error");
+        exit(EXIT_FAILURE);
+    }
     printf("[-] %s\n", buffer);
 
-    recv(cli_sock, buffer, MAXSIZE, 0);
+    memset(buffer, '\0', MAXSIZE);
+    n = recv(cli_sock, buffer, MAXSIZE, 0);
+    if (n<0) {
+        perror("send - recv error");
+        exit(EXIT_FAILURE);
+    }
     printf("[+] %s\n", buffer);
 
-    sprintf(buffer, "MAIL FROM %s", getLocalIP());
-    send(cli_sock, buffer, sizeof(buffer), 0);
+    memset(buffer, '\0', MAXSIZE);
+    sprintf(buffer, "MAIL FROM: %s", getLocalIP());
+    n = send(cli_sock, buffer, strlen(buffer), 0);
+    if (n<0) {
+        perror("send - recv error");
+        exit(EXIT_FAILURE);
+    }
     printf("[-] %s\n", buffer);
+
+    
     return 0;
 }
 
