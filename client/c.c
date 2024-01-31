@@ -64,7 +64,7 @@ int main(int argc, char* argv[]){
 
         // send request to server
         memset(buffer, '\0', MAXSIZE);
-        printf("Enter >  ");
+        printf("Enter(80 chars max) >  ");
         fgets(buffer, MAXSIZE, stdin);
         sprintf(buffer, "%s\r\n", buffer);
         n = send(cli_sock, buffer, strlen(buffer), 0);

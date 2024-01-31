@@ -110,11 +110,13 @@ void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in
 		else if (strncmp(buffer, "HELO", 4)==0){
 			char ip[MAXSIZE];
 			strcpy(ip, &buffer[5]);
+			char msg[MAXSIZE];
+			strcpy(msg, buffer);
 			if ( strncmp(ip, localIP, strlen(localIP)) == 0){
 				// ip ok
 				memset(buffer, '\0', MAXSIZE);
 				status = 250;
-				sprintf(buffer, "%d OK Hello %s\r\n", status, localIP);
+				sprintf(buffer, "%d OK %s\r\n", status, msg);
 				n = send(cli_sock, buffer, strlen(buffer), 0);
 				if(n <0 ){
 					perror("send error");
@@ -134,6 +136,18 @@ void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in
 				}
 				printf("S: %s\n", buffer);
 			}
+		}
+		else if (strncmp(buffer, "DATA", 4) == 0){
+			// DATA
+			memset(buffer, '\0', MAXSIZE);
+			status = 354;
+			sprintf(buffer, "%d Enter mail, end with \".\" on a line by itself\r\n", status);
+			n = send(cli_sock, buffer, strlen(buffer), 0);
+			if (n<0) {
+				perror("send error");
+				exit(EXIT_FAILURE);
+			}
+			printf("S: %s\n", buffer);
 		}
 		else if (strncmp(buffer, "MAIL FROM", 9) == 0){
 			// from address
