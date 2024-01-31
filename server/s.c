@@ -92,6 +92,10 @@ void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in
 			perror("recv error");
 			exit(EXIT_FAILURE);
 		}
+		if (n==0) {
+			printf("Client disconnected\n");
+			exit(EXIT_FAILURE);
+		}
 		printf("C: %s\n", buffer);
 
 		// response to client
@@ -148,6 +152,35 @@ void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in
 				exit(EXIT_FAILURE);
 			}
 			printf("S: %s\n", buffer);
+
+			while(1){
+				memset(buffer, '\0', MAXSIZE);
+				n = recv(cli_sock, buffer, MAXSIZE, 0);
+				if (n<0) {
+					perror("recv error");
+					exit(EXIT_FAILURE);
+				}
+				if (n==0){
+					printf("Client disconnected\n");
+					exit(EXIT_FAILURE);
+				}
+				printf("C: %s\n", buffer);
+
+				if ( strncmp(buffer, ".", 1)==0 ){
+					printf("message ended\n");
+
+					memset(buffer, '\0', MAXSIZE);
+					status = 250;
+					sprintf(buffer, "%d OK Message accepted for delivery\r\n", status);
+					n = send(cli_sock, buffer, strlen(buffer), 0);
+					if (n<0) {
+						perror("send error");
+						exit(EXIT_FAILURE);
+					}
+					printf("S: %s\n", buffer);
+					break;
+				}
+			}
 		}
 		else if (strncmp(buffer, "MAIL FROM", 9) == 0){
 			// from address
@@ -296,6 +329,17 @@ void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in
 					printf("S: %s\n", buffer);
 				}
 			}
+		}
+		else {
+			memset(buffer, '\0', MAXSIZE);
+			status = 600;
+			sprintf(buffer, "%d command not found\r\n", status);
+			n = send(cli_sock, buffer, strlen(buffer), 0);
+			if (n<0) {
+				perror("send error");
+				exit(EXIT_FAILURE);
+			}
+			printf("S:  %s\n", buffer);
 		}
 	}
 
