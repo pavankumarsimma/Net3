@@ -8,6 +8,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <sys/wait.h>
+#include <fcntl.h>
 #include <sys/stat.h>
 #define MAXSIZE 1000
 
@@ -84,6 +85,8 @@ void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in
 	printf("S:  %s\n", buffer);
 	char * localIP = getLocalIP();
 	int flag=1;
+	char SEND_USERNAME[MAXSIZE];
+	char RECV_USERNAME[MAXSIZE];
 	while(flag == 1){
 		// request from client
 		memset(buffer, '\0', MAXSIZE);
@@ -166,6 +169,17 @@ void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in
 				}
 				printf("C: %s\n", buffer);
 
+				// file handling
+				char filename[MAXSIZE];
+				sprintf(filename, "./%s/mymailbox", RECV_USERNAME);
+				int fd = open(filename, O_RDWR | O_CREAT | O_APPEND, 0666);
+				int bytes_write = write(fd, buffer, n);
+				if (bytes_write == -1){
+					perror("mailbox error\n");
+					close(fd);
+					close(cli_sock);
+					exit(EXIT_FAILURE);
+				}
 				int msg_end=0;
 				for(int i=0; i<n; i++){
 					if ( buffer[i]=='.' && (buffer[i+1]=='\r' && buffer[i+2]=='\n') ){
@@ -179,28 +193,17 @@ void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in
 							perror("send error");
 							exit(EXIT_FAILURE);
 						}
+
 						printf("S: %s\n", buffer);
 						break;
 					}
 				}
 
 				if (msg_end == 1){
+					close(fd);
 					break;
 				}
-				// if ( strncmp(buffer, ".", 1)==0 ){
-				// 	printf("message ended\n");
-
-				// 	memset(buffer, '\0', MAXSIZE);
-				// 	status = 250;
-				// 	sprintf(buffer, "%d OK Message accepted for delivery\r\n", status);
-				// 	n = send(cli_sock, buffer, strlen(buffer), 0);
-				// 	if (n<0) {
-				// 		perror("send error");
-				// 		exit(EXIT_FAILURE);
-				// 	}
-				// 	printf("S: %s\n", buffer);
-				// 	break;
-				// }
+				
 			}
 		}
 		else if (strncmp(buffer, "MAIL", 4) == 0){
@@ -252,6 +255,7 @@ void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in
 				}
 				// printf("%s\n", user);
 				sprintf(path, "./%s", user);
+				strcpy(SEND_USERNAME, user);
 				if (directoryExists(path) == 0){
 					//  user doen't exist
 					memset(buffer, '\0', MAXSIZE);
@@ -326,6 +330,7 @@ void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in
 				}
 				//printf("%s\n", user);
 				sprintf(path, "./%s", user);
+				strcpy(RECV_USERNAME, user);
 				if (directoryExists(path) == 0){
 					//  user doen't exist
 					memset(buffer, '\0', MAXSIZE);
