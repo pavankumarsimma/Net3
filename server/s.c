@@ -166,23 +166,44 @@ void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in
 				}
 				printf("C: %s\n", buffer);
 
-				if ( strncmp(buffer, ".", 1)==0 ){
-					printf("message ended\n");
-
-					memset(buffer, '\0', MAXSIZE);
-					status = 250;
-					sprintf(buffer, "%d OK Message accepted for delivery\r\n", status);
-					n = send(cli_sock, buffer, strlen(buffer), 0);
-					if (n<0) {
-						perror("send error");
-						exit(EXIT_FAILURE);
+				int msg_end=0;
+				for(int i=0; i<n; i++){
+					if ( buffer[i]=='.' && (buffer[i+1]=='\r' && buffer[i+2]=='\n') ){
+						
+						msg_end=1;
+						memset(buffer, '\0', MAXSIZE);
+						status = 250;
+						sprintf(buffer, "%d OK Message accepted for delivery\r\n", status);
+						n = send(cli_sock, buffer, strlen(buffer), 0);
+						if (n<0) {
+							perror("send error");
+							exit(EXIT_FAILURE);
+						}
+						printf("S: %s\n", buffer);
+						break;
 					}
-					printf("S: %s\n", buffer);
+				}
+
+				if (msg_end == 1){
 					break;
 				}
+				// if ( strncmp(buffer, ".", 1)==0 ){
+				// 	printf("message ended\n");
+
+				// 	memset(buffer, '\0', MAXSIZE);
+				// 	status = 250;
+				// 	sprintf(buffer, "%d OK Message accepted for delivery\r\n", status);
+				// 	n = send(cli_sock, buffer, strlen(buffer), 0);
+				// 	if (n<0) {
+				// 		perror("send error");
+				// 		exit(EXIT_FAILURE);
+				// 	}
+				// 	printf("S: %s\n", buffer);
+				// 	break;
+				// }
 			}
 		}
-		else if (strncmp(buffer, "MAIL FROM", 9) == 0){
+		else if (strncmp(buffer, "MAIL", 4) == 0){
 			// from address
 			char from[MAXSIZE];
 			strcpy(from, &buffer[11]);
@@ -256,7 +277,7 @@ void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in
 				}
 			}
 		}	
-		else if (strncmp(buffer, "RCPT TO", 7) == 0){
+		else if (strncmp(buffer, "RCPT", 4) == 0){
 			// to address
 			char to[MAXSIZE];
 			strcpy(to, &buffer[9]);

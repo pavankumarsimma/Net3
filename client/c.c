@@ -153,6 +153,7 @@ int main(int argc, char* argv[]){
 
 
             // mail session
+            int status;
             memset(buffer, '\0', MAXSIZE);
             n = recv(cli_sock, buffer, MAXSIZE, 0);
             if (n<0){
@@ -167,7 +168,199 @@ int main(int argc, char* argv[]){
             }
             printf("S: %s\n", buffer);
 
-            // HAVE TO IMPLEMENT
+            char server_ip[MAXSIZE];
+            char response[MAXSIZE];
+
+            sscanf(buffer, "%d %s Service Ready", &status, server_ip);
+            if (status != 220) {
+                printf("Error in sending mail: %s\n", buffer);
+                close(cli_sock);
+                break;
+            }
+
+            memset(buffer, '\0', MAXSIZE);
+            sprintf(buffer, "HELO %s\r\n", server_ip);
+            n = send(cli_sock, buffer, strlen(buffer), 0);
+            if (n<0){
+                perror("send error");
+                close(cli_sock);
+                break;
+            }
+            if (n==0) {
+                printf("server disconnected\n");
+                close(cli_sock);
+                break;
+            }
+            printf("C: %s\n", buffer);
+
+            memset(buffer, '\0', MAXSIZE);
+            n = recv(cli_sock, buffer, MAXSIZE, 0);
+            if (n<0){
+                perror("recv error");
+                close(cli_sock);
+                break;
+            }
+            if (n==0) {
+                printf("server disconnected\n");
+                close(cli_sock);
+                break;
+            }
+            printf("S: %s\n", buffer);
+            sscanf(buffer, "%d%s", &status, response);
+            if (status != 250) {
+                printf("Error in sending mail: %s\n", buffer);
+                close(cli_sock);
+                break;
+            }
+
+            memset(buffer, '\0', MAXSIZE);
+            sprintf(buffer, "MAIL FROM: %s\r\n", from);
+            n = send(cli_sock, buffer, strlen(buffer), 0);
+            if (n<0){
+                perror("send error");
+                close(cli_sock);
+                break;
+            }
+            if (n==0) {
+                printf("server disconnected\n");
+                close(cli_sock);
+                break;
+            }
+            printf("C: %s\n", buffer);
+
+            memset(buffer, '\0', MAXSIZE);
+            n = recv(cli_sock, buffer, MAXSIZE, 0);
+            if (n<0){
+                perror("recv error");
+                close(cli_sock);
+                break;
+            }
+            if (n==0) {
+                printf("server disconnected\n");
+                close(cli_sock);
+                break;
+            }
+            printf("S: %s\n", buffer);
+            sscanf(buffer, "%d%s", &status, response);
+            if (status != 250) {
+                printf("Error in sending mail: %s\n", buffer);
+                close(cli_sock);
+                break;
+            }
+
+            memset(buffer, '\0', MAXSIZE);
+            sprintf(buffer, "RCPT TO: %s\r\n", to);
+            n = send(cli_sock, buffer, strlen(buffer), 0);
+            if (n<0){
+                perror("send error");
+                close(cli_sock);
+                break;
+            }
+            if (n==0) {
+                printf("server disconnected\n");
+                close(cli_sock);
+                break;
+            }
+            printf("C: %s\n", buffer);
+
+            memset(buffer, '\0', MAXSIZE);
+            n = recv(cli_sock, buffer, MAXSIZE, 0);
+            if (n<0){
+                perror("recv error");
+                close(cli_sock);
+                break;
+            }
+            if (n==0) {
+                printf("server disconnected\n");
+                close(cli_sock);
+                break;
+            }
+            printf("S: %s\n", buffer);
+            sscanf(buffer, "%d%s", &status, response);
+            if (status != 250) {
+                printf("Error in sending mail: %s\n", buffer);
+                close(cli_sock);
+                break;
+            }
+
+            memset(buffer, '\0', MAXSIZE);
+            sprintf(buffer, "DATA\r\n");
+            n = send(cli_sock, buffer, strlen(buffer), 0);
+            if (n<0){
+                perror("send error");
+                close(cli_sock);
+                break;
+            }
+            if (n==0) {
+                printf("server disconnected\n");
+                close(cli_sock);
+                break;
+            }
+            printf("C: %s\n", buffer);
+
+            memset(buffer, '\0', MAXSIZE);
+            n = recv(cli_sock, buffer, MAXSIZE, 0);
+            if (n<0){
+                perror("recv error");
+                close(cli_sock);
+                break;
+            }
+            if (n==0) {
+                printf("server disconnected\n");
+                close(cli_sock);
+                break;
+            }
+            printf("S: %s\n", buffer);
+            sscanf(buffer, "%d%s", &status, response);
+            if (status != 354) {
+                printf("Error in sending mail: %s\n", buffer);
+                close(cli_sock);
+                break;
+            }
+
+            for(int i=0; i<53; i++){
+                memset(buffer, '\0', MAXSIZE);
+                int k = strlen(mail[i]);
+                mail[i][k-1] = '\0';
+                sprintf(buffer, "%s\r\n", mail[i]);
+                n = send(cli_sock, buffer, strlen(buffer), 0);
+                if (n<0){
+                    perror("send error");
+                    close(cli_sock);
+                    break;
+                }
+                if (n==0) {
+                    printf("server disconnected\n");
+                    close(cli_sock);
+                    break;
+                }
+                printf("C: %s\n", buffer);
+
+                if ( strncmp(mail[i], ".", 1)==0 ){
+                    break;
+                }
+            }
+
+            memset(buffer, '\0', MAXSIZE);
+            n = recv(cli_sock, buffer, MAXSIZE, 0);
+            if (n<0){
+                perror("recv error");
+                close(cli_sock);
+                break;
+            }
+            if (n==0) {
+                printf("server disconnected\n");
+                close(cli_sock);
+                break;
+            }
+            printf("S: %s\n", buffer);
+            sscanf(buffer, "%d%s", &status, response);
+            if (status != 250) {
+                printf("Error in sending mail: %s\n", buffer);
+                close(cli_sock);
+                break;
+            }
+
 
             memset(buffer, '\0', MAXSIZE);
             sprintf(buffer, "QUIT\r\n");
@@ -197,7 +390,13 @@ int main(int argc, char* argv[]){
                 break;
             }
             printf("S: %s\n", buffer);
-
+            sscanf(buffer, "%d%s", &status, response);
+            if (status != 221) {
+                printf("Error in closing connection: %s\n", buffer);
+                close(cli_sock);
+                break;
+            }
+            printf("Mail sent successfully\n");
             close(cli_sock);
         }
         else if (option == 1){
