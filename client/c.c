@@ -70,8 +70,8 @@ int main(int argc, char* argv[]){
                 }
             }
             // format checking
-            char from[MAXSIZE];
-            char to[MAXSIZE];
+            char from[MAXSIZE-15];
+            char to[MAXSIZE-15];
             char subject[51];
             
             if (sscanf(mail[0], "From: %[^\n]", from) != 1) {
@@ -168,7 +168,7 @@ int main(int argc, char* argv[]){
             }
             printf("S: %s\n", buffer);
 
-            char server_ip[MAXSIZE];
+            char server_ip[MAXSIZE-10];
             char response[MAXSIZE];
 
             sscanf(buffer, "%d %s Service Ready", &status, server_ip);

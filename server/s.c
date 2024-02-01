@@ -10,6 +10,7 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <time.h>
 #define MAXSIZE 1000
 
 char *getLocalIP();
@@ -117,7 +118,7 @@ void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in
 		else if (strncmp(buffer, "HELO", 4)==0){
 			char ip[MAXSIZE];
 			strcpy(ip, &buffer[5]);
-			char msg[MAXSIZE];
+			char msg[MAXSIZE-15];
 			strcpy(msg, buffer);
 			if ( strncmp(ip, localIP, strlen(localIP)) == 0){
 				// ip ok
@@ -155,7 +156,7 @@ void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in
 				exit(EXIT_FAILURE);
 			}
 			printf("S: %s\n", buffer);
-
+			int count=0;
 			while(1){
 				memset(buffer, '\0', MAXSIZE);
 				n = recv(cli_sock, buffer, MAXSIZE, 0);
@@ -170,21 +171,41 @@ void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in
 				printf("C: %s\n", buffer);
 
 				// file handling
-				char filename[MAXSIZE];
+				char filename[MAXSIZE+12];
 				sprintf(filename, "./%s/mymailbox", RECV_USERNAME);
 				int fd = open(filename, O_RDWR | O_CREAT | O_APPEND, 0666);
-				int bytes_write = write(fd, buffer, n);
-				if (bytes_write == -1){
-					perror("mailbox error\n");
-					close(fd);
-					close(cli_sock);
-					exit(EXIT_FAILURE);
-				}
+				int bytes_write;
+				
 				int msg_end=0;
 				for(int i=0; i<n; i++){
-					if ( buffer[i]=='.' && (buffer[i+1]=='\r' && buffer[i+2]=='\n') ){
+					if(count==3){
+						char received[80];
+						memset(received, '\0', 80);
+						time_t rawtime;
+						struct tm *timeinfo;
+						time(&rawtime);
+						timeinfo = localtime(&rawtime);
+						strftime(received, 80, "Received: %d : %H : %M\r\n", timeinfo);
+						//printf("%s", received);
+						write(fd, received, strlen(received));
+						count=1000;
+					}
+					if (i>=1) {
+						if ( buffer[i]=='\n' && buffer[i-1]=='\r' ){
+							count++;
+						}
+					}
+					bytes_write = write(fd, &buffer[i], 1);
+					if (bytes_write == -1){
+						perror("mailbox error\n");
+						close(fd);
+						close(cli_sock);
+						exit(EXIT_FAILURE);
+					}
+					if ( (i-2>=0 && i+2<=n-1) && (buffer[i-2]=='\r' && buffer[i-1]=='\n') && buffer[i]=='.' && (buffer[i+1]=='\r' && buffer[i+2]=='\n') ){
 						
 						msg_end=1;
+						write(fd, &buffer[i+1], strlen(&buffer[i+1]));
 						memset(buffer, '\0', MAXSIZE);
 						status = 250;
 						sprintf(buffer, "%d OK Message accepted for delivery\r\n", status);
@@ -193,7 +214,6 @@ void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in
 							perror("send error");
 							exit(EXIT_FAILURE);
 						}
-
 						printf("S: %s\n", buffer);
 						break;
 					}
@@ -208,7 +228,7 @@ void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in
 		}
 		else if (strncmp(buffer, "MAIL", 4) == 0){
 			// from address
-			char from[MAXSIZE];
+			char from[MAXSIZE-28];
 			strcpy(from, &buffer[11]);
 			int ff = 0;
 			int j=0;
@@ -244,7 +264,7 @@ void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in
 			}
 			else {
 				// correct format of from address
-				char path[MAXSIZE];
+				char path[MAXSIZE+2];
 				char user[MAXSIZE];
 				sscanf(buffer, "MAIL FROM: %s\r\n", path);
 				strcpy(from, path);
@@ -319,7 +339,7 @@ void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in
 			}
 			else {
 				// correct format of from address
-				char path[MAXSIZE];
+				char path[MAXSIZE+2];
 				char user[MAXSIZE];
 				sscanf(buffer, "RCPT TO: %s\r\n", path);
 				strcpy(to, path);
