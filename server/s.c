@@ -120,30 +120,39 @@ void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in
 			strcpy(ip, &buffer[5]);
 			char msg[MAXSIZE-15];
 			strcpy(msg, buffer);
-			if ( strncmp(ip, localIP, strlen(localIP)) == 0){
-				// ip ok
-				memset(buffer, '\0', MAXSIZE);
-				status = 250;
-				sprintf(buffer, "%d OK %s\r\n", status, msg);
-				n = send(cli_sock, buffer, strlen(buffer), 0);
-				if(n <0 ){
-					perror("send error");
-					exit(EXIT_FAILURE);
-				}
-				printf("S: %s\n", buffer);
+			memset(buffer, '\0', MAXSIZE);
+			status = 250;
+			sprintf(buffer, "%d OK %s\r\n", status, msg);
+			n = send(cli_sock, buffer, strlen(buffer), 0);
+			if(n <0 ){
+				perror("send error");
+				exit(EXIT_FAILURE);
 			}
-			else {
-				// wrong server address
-				status = 600;
-				memset(buffer, '\0', MAXSIZE);
-				sprintf(buffer, "%d Wrong server address\r\n", status);
-				n = send(cli_sock, buffer, strlen(buffer), 0);
-				if (n<0) {
-					perror("send error");
-					exit(EXIT_FAILURE);
-				}
-				printf("S: %s\n", buffer);
-			}
+			printf("S: %s\n", buffer);
+			// if ( strncmp(ip, localIP, strlen(localIP)) == 0){
+			// 	// ip ok
+			// 	memset(buffer, '\0', MAXSIZE);
+			// 	status = 250;
+			// 	sprintf(buffer, "%d OK %s\r\n", status, msg);
+			// 	n = send(cli_sock, buffer, strlen(buffer), 0);
+			// 	if(n <0 ){
+			// 		perror("send error");
+			// 		exit(EXIT_FAILURE);
+			// 	}
+			// 	printf("S: %s\n", buffer);
+			// }
+			// else {
+			// 	// wrong server address
+			// 	status = 600;
+			// 	memset(buffer, '\0', MAXSIZE);
+			// 	sprintf(buffer, "%d Wrong server address\r\n", status);
+			// 	n = send(cli_sock, buffer, strlen(buffer), 0);
+			// 	if (n<0) {
+			// 		perror("send error");
+			// 		exit(EXIT_FAILURE);
+			// 	}
+			// 	printf("S: %s\n", buffer);
+			// }
 		}
 		else if (strncmp(buffer, "DATA", 4) == 0){
 			// DATA
@@ -185,7 +194,7 @@ void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in
 						struct tm *timeinfo;
 						time(&rawtime);
 						timeinfo = localtime(&rawtime);
-						strftime(received, 80, "Received: %d : %H : %M\r\n", timeinfo);
+						strftime(received, 80, "Received: %d-%m-%Y : %H : %M\r\n", timeinfo);
 						//printf("%s", received);
 						write(fd, received, strlen(received));
 						count=1000;
@@ -409,62 +418,3 @@ int directoryExists(const char *path) {
     }
     return 0; // Directory doesn't exist or there was an error
 }
-
-/*
-
-	memset(buffer, '\0', MAXSIZE);
-	n = recv(cli_sock, buffer, MAXSIZE, 0);
-	if (n<0) {
-		perror("send - recv error");
-		exit(EXIT_FAILURE);
-	}
-	printf("C:  %s\n", buffer);
-
-	memset(buffer, '\0', MAXSIZE);
-	sprintf(buffer, "250 OK Hello %s\r\n", inet_ntoa(serv_addr.sin_addr));
-	n = send(cli_sock, buffer, strlen(buffer), 0);
-	if (n<0) {
-		perror("send - recv error");
-		exit(EXIT_FAILURE);
-	}
-	printf("S:  %s\n", buffer);
-
-	memset(buffer, '\0', MAXSIZE);
-	n = recv(cli_sock, buffer, MAXSIZE, 0);
-	if (n<0) {
-		perror("send - recv error");
-		exit(EXIT_FAILURE);
-	}
-	printf("C:  %s\n", buffer);
-
-	char sender[MAXSIZE];
-	sscanf(buffer, "MAIL FROM: %s\r\n", sender);
-	memset(buffer, '\0', MAXSIZE);
-	sprintf(buffer, "250 %s... Sender ok\r\n", sender);
-	n = send(cli_sock, buffer, strlen(buffer), 0);
-	if (n<0) {
-		perror("send - recv error");
-		exit(EXIT_FAILURE);
-	}
-	printf("S:  %s\n", buffer);
-
-	memset(buffer, '\0', MAXSIZE);
-	n = recv(cli_sock, buffer, MAXSIZE, 0);
-	if (n<0) {
-		perror("send - recv error");
-		exit(EXIT_FAILURE);
-	}
-	printf("C:  %s\n", buffer);
-
-	char receiver[MAXSIZE];
-	sscanf(buffer, "RCPT TO: %s\r\n", receiver);
-	memset(buffer, '\0', MAXSIZE);
-	sprintf(buffer, "250 root... Recipient ok\r\n");
-	n = send(cli_sock, buffer, strlen(buffer), 0);
-	if (n<0) {
-		perror("send - recv error");
-		exit(EXIT_FAILURE);
-	}
-	printf("S:  %s\n", buffer);
-
-*/
