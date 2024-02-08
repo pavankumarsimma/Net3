@@ -7,7 +7,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <netdb.h>
-#define MAXSIZE 100
+#define MAXSIZE 400
 #define LINESIZE 80
 char *getLocalIP();
 int main(int argc, char* argv[]){
@@ -408,6 +408,250 @@ int main(int argc, char* argv[]){
             close(cli_sock);
         }
         else if (option == 1){
+            // pop3
+            int cli_sock = socket(AF_INET, SOCK_STREAM, 0);
+            if (cli_sock == -1){
+                perror("Socket creation Failed");
+                exit(EXIT_FAILURE);
+            }
+            serv_addr.sin_family = AF_INET;
+            serv_addr.sin_addr.s_addr = inet_addr(argv[1]);
+            serv_addr.sin_port = htons(atoi(argv[3]));
+            int x = connect(cli_sock, (const struct sockaddr*)&serv_addr, sizeof(serv_addr));
+            if (x == -1){
+                perror("Connect error");
+                exit(EXIT_FAILURE);
+            }
+            char buffer[MAXSIZE];
+            printf("Connected to POP3 server\n");
+
+            int n;
+            n = recv(cli_sock, buffer, MAXSIZE, 0);
+            printf("S: %s\n", buffer);
+
+            char status[MAXSIZE];
+            char response[MAXSIZE];
+            // USER
+            memset(buffer, '\0', MAXSIZE);
+            sprintf(buffer, "USER %s\r\n", USER_NAME);
+            n = send(cli_sock, buffer, strlen(buffer), 0);
+            printf("C: %s\n", buffer);
+
+            memset(buffer, '\0', MAXSIZE);
+            n = recv(cli_sock, buffer, MAXSIZE, 0);
+            printf("S: %s\n", buffer);
+
+            sscanf(buffer, "%s %s", status, response);
+            if ( strcmp(status, "-ERR") == 0){
+                close(cli_sock);
+                continue;
+            }
+
+            // PASS
+            memset(buffer, '\0', MAXSIZE);
+            sprintf(buffer, "PASS %s\r\n", PASSWORD);
+            n = send(cli_sock, buffer, strlen(buffer), 0);
+            printf("C: %s\n", buffer);
+
+            n = recv(cli_sock, buffer, MAXSIZE, 0);
+            printf("S: %s\n", buffer);
+
+            sscanf(buffer, "%s %s", status, response);
+            if ( strcmp(status, "-ERR") == 0){
+                close(cli_sock);
+                continue;
+            }
+
+            // trans
+            int msg_count = 0;
+            int total_size = 0;
+            memset(buffer, '\0', MAXSIZE);
+            sprintf(buffer, "STAT\r\n");
+            n = send(cli_sock, buffer, strlen(buffer), 0);
+            printf("C: %s\n", buffer);
+
+            n = recv(cli_sock, buffer, MAXSIZE, 0);
+            printf("S: %s\n", buffer);
+
+            sscanf(buffer, "%s %s", status, response);
+            if ( strcmp(status, "-ERR") == 0){
+                close(cli_sock);
+                continue;
+            }
+            sscanf(response, "%d %d", &msg_count, &total_size);
+
+            memset(buffer, '\0', MAXSIZE);
+            sprintf(buffer, "LIST\r\n");
+            n = send(cli_sock, buffer, strlen(buffer), 0);
+            printf("C: %s\n", buffer);
+
+            int gh = 0;
+            while(1){
+                memset(buffer, '\0', MAXSIZE);
+                n = recv(cli_sock, buffer, MAXSIZE, 0);
+                if (gh == 0){
+                    gh = 1;
+                    if (buffer[0] == '-'){
+                        gh = 2;
+                        close(cli_sock);
+                        break;
+                    }
+                }
+                printf("S: ");
+                int ff = 0;
+                for(int i=0; i<n; i++){
+                    printf("%c", buffer[i]);
+                    if ( (i-2>=0 && i+2<=n-1) && (buffer[i-2]=='\r' && buffer[i-1]=='\n') && buffer[i]=='.' && (buffer[i+1]=='\r' && buffer[i+2]=='\n')){
+                        ff = 1;
+                        break;
+                    }
+                }
+                printf("\n");
+                if (ff == 1){
+                    break;
+                }
+            }
+            if (gh == 2){
+                break;
+            }
+
+            while(1){
+                int option = -1;
+                // mails printing
+                memset(buffer, '\0', MAXSIZE);
+                sprintf(buffer, "STAT\r\n");
+                n = send(cli_sock, buffer, strlen(buffer), 0);
+                printf("C: %s\n", buffer);
+
+                memset(buffer, '\0', MAXSIZE);
+                n = recv(cli_sock, buffer, MAXSIZE, 0);
+                printf("S: %s\n", buffer);
+
+                sscanf(buffer, "%s %s", status, response);
+                if ( strcmp(status, "-ERR") == 0){
+                    close(cli_sock);
+                    break;
+                }
+                sscanf(response, "%d %d", &msg_count, &total_size);
+
+                for (int j=0; j<msg_count; j++){
+                    memset(buffer, '\0', MAXSIZE);
+                    sprintf(buffer, "RETR %d\r\n", j);
+                    n = send(cli_sock, buffer, strlen(buffer), 0);
+                    //printf("C: %s\n", buffer);
+
+                    // parsing the mail
+                    char sender_mail[MAXSIZE-50];
+                    char recv_mail[MAXSIZE-50];
+                    char received[MAXSIZE-50];
+                    char subject[MAXSIZE-50];
+                    //printf("S: ");
+                    char data[600];
+                    int index = 0;
+                    while(1){
+                        memset(buffer, '\0', MAXSIZE);
+                        n = recv(cli_sock, buffer, MAXSIZE, 0);
+                        sprintf(&data[index], "%s", buffer);
+                        index += n;
+                        int ff=0;
+                        for (int i=0; i<n; i++){
+                            //printf("%c", buffer[i]);
+                            if ( (i-1>=0 && i+1<=n-1) && (buffer[i-1]=='\n') && buffer[i]=='.' && (buffer[i+1]=='\r')){
+                                ff = 1;
+                                break;
+                            }
+                        }
+                        if (ff == 1){
+                            break;
+                        }
+                    }
+                    //printf("\n");
+
+                    if (data[0] == '-'){
+                        continue;
+                    }
+                    memset(response, '\0',400);
+                    char body[MAXSIZE-50];
+                    int sz=0;
+                    sscanf(data, "+OK %d octets\r\nFrom: %s\r\nTo: %s\r\nSubject: %[^\r\n]\r\nReceived: %[^\r\n]\r\n%s", 
+                    &sz, sender_mail, recv_mail, subject, received, body);
+                    printf("%d. <%s> <%s> <%s>\n", j, sender_mail, received, subject);
+
+                }
+                // prompting
+                printf("(-1 for exit) Enter mail no. to see:");
+                scanf("%d", &option);
+                if (option == -1){
+                    break;
+                }
+                else if(  option < msg_count && option >= 0){
+                    memset(buffer, '\0', MAXSIZE);
+                    sprintf(buffer, "RETR %d\r\n", option);
+                    n = send(cli_sock, buffer, strlen(buffer), 0);
+                    //printf("C: %s\n", buffer);
+                    //printf("S: ");
+                    char data[600];
+                    int index = 0;
+                    int size = 0;
+                    int lf = 0;
+
+                    memset(buffer, '\0', MAXSIZE);
+                    n = recv(cli_sock, buffer, 11+sizeof(int), 0);
+                    printf("%s", buffer);
+
+                    char d[10];
+                    sscanf(buffer, "+OK %s octets\r\n", d);
+                    size = atoi(d);
+                    // printf("Size = %d\n", size);
+                    while(size--){
+                        memset(buffer, '\0', MAXSIZE);
+                        n = recv(cli_sock, buffer, 1, 0);
+                        printf("%s", buffer);
+                        
+                    }
+                    printf("\n");
+                    if (data[0] == '-'){
+                        continue;
+                    }
+                    getchar();
+                    char y=getchar();
+                    //printf("choose: %c", y);
+
+                    if (y == 'd'){
+                        memset(buffer, '\0', 0);
+                        sprintf(buffer, "DELE %d\r\n", option);
+                        n = send(cli_sock, buffer, strlen(buffer), 0);
+                        printf("C: %s\n", buffer);
+
+                        memset(buffer, '\0', 0);
+                        n = recv(cli_sock, buffer, MAXSIZE, 0);
+                        printf("S: %s\n", buffer);
+
+                    }
+                }
+                else{
+                    printf("Mail no. out of range, give again\n");
+                }
+            }
+
+            memset(buffer, '\0', MAXSIZE);
+            sprintf(buffer, "QUIT");
+            n = send(cli_sock, buffer, strlen(buffer), 0);
+            printf("S: %s\n", buffer);
+
+            memset(buffer, '\0', MAXSIZE);
+            n = recv(cli_sock, buffer, MAXSIZE, 0);
+            printf("C: %s\n", buffer);
+
+            // update state
+            memset(buffer, '\0', MAXSIZE);
+            sprintf(buffer, "QUIT");
+            n = send(cli_sock, buffer, strlen(buffer), 0);
+            printf("S: %s\n", buffer);
+
+            memset(buffer, '\0', MAXSIZE);
+            n = recv(cli_sock, buffer, MAXSIZE, 0);
+            printf("C: %s\n", buffer);
             
         }
         else {

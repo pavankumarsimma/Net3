@@ -1,6 +1,6 @@
 POP=3000
 SMTP=3400
-all: client pop3_server 
+all: pop3_server 
 	
 pop3_server:
 	gcc pop.c -o pop
