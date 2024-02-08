@@ -408,7 +408,7 @@ int main(int argc, char* argv[]){
             close(cli_sock);
         }
         else if (option == 1){
-            printf("POP3 part not yet implemented\n");
+            
         }
         else {
             printf("Invalid option\n");

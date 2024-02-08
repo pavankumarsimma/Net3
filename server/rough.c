@@ -13,12 +13,15 @@
 
 int directoryExists(const char *path);
 int main(){
+	sleep(15);
+	/*
 	if (directoryExists("./simma") == 0) {
 		printf("no dir\n");
 	}
 	else {
 		printf("Dir exists\n");
 	}
+*/
 	return 0;
 }
 
