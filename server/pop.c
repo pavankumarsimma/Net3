@@ -396,7 +396,6 @@ void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in
 								break;
 							}
 						}
-						printf("Hello\n");
 					}
 					if (fg == 1) {
 						break;

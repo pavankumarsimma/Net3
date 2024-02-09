@@ -275,7 +275,7 @@ void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in
 				// correct format of from address
 				char path[MAXSIZE+2];
 				char user[MAXSIZE];
-				sscanf(buffer, "MAIL FROM: %s\r\n", path);
+				sscanf(buffer, "MAIL FROM: <%s>\r\n", path);
 				strcpy(from, path);
 				memset(user, '\0', MAXSIZE);
 				for (int i=0; i<strlen(path); i++){
@@ -300,7 +300,7 @@ void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in
 				else {
 					memset(buffer, '\0', MAXSIZE);
 					status = 250;
-					sprintf(buffer, "%d %s... Sender ok\r\n", status, from);
+					sprintf(buffer, "%d <%s... Sender ok\r\n", status, from);
 					n = send(cli_sock, buffer, strlen(buffer), 0);
 					if (n < 0){
 						perror("send error");
@@ -350,7 +350,7 @@ void handle_client(int cli_sock, struct sockaddr_in cli_addr, struct sockaddr_in
 				// correct format of from address
 				char path[MAXSIZE+2];
 				char user[MAXSIZE];
-				sscanf(buffer, "RCPT TO: %s\r\n", path);
+				sscanf(buffer, "RCPT TO: <%s>\r\n", path);
 				strcpy(to, path);
 				memset(user, '\0', MAXSIZE);
 				for (int i=0; i<strlen(path); i++){

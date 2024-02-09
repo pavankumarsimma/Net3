@@ -222,7 +222,7 @@ int main(int argc, char* argv[]){
             }
 
             memset(buffer, '\0', MAXSIZE);
-            sprintf(buffer, "MAIL FROM: %s\r\n", from);
+            sprintf(buffer, "MAIL FROM: <%s>\r\n", from);
             n = send(cli_sock, buffer, strlen(buffer), 0);
             if (n<0){
                 perror("send error");
@@ -257,7 +257,7 @@ int main(int argc, char* argv[]){
             }
 
             memset(buffer, '\0', MAXSIZE);
-            sprintf(buffer, "RCPT TO: %s\r\n", to);
+            sprintf(buffer, "RCPT TO: <%s>\r\n", to);
             n = send(cli_sock, buffer, strlen(buffer), 0);
             if (n<0){
                 perror("send error");
@@ -534,6 +534,9 @@ int main(int argc, char* argv[]){
                 }
                 sscanf(response, "%d %d", &msg_count, &total_size);
 
+                printf("\n--------------------------------------------------\n");
+                printf("Sl.No.<Sender’s email><date : hour : minute><Subject>");
+                printf("\n--------------------------------------------------\n");
                 for (int j=0; j<msg_count; j++){
                     memset(buffer, '\0', MAXSIZE);
                     sprintf(buffer, "RETR %d\r\n", j);
@@ -575,10 +578,11 @@ int main(int argc, char* argv[]){
                     int sz=0;
                     sscanf(data, "+OK %d octets\r\nFrom: %s\r\nTo: %s\r\nSubject: %[^\r\n]\r\nReceived: %[^\r\n]\r\n%s", 
                     &sz, sender_mail, recv_mail, subject, received, body);
-                    printf("%d. <%s> <%s> <%s>\n", j, sender_mail, received, subject);
+                    printf("%d. <%s>\t <%s>\t <%s>\n", j, sender_mail, received, subject);
 
                 }
                 // prompting
+                printf("\n--------------------------------------------------\n");
                 printf("(-1 for exit) Enter mail no. to see:");
                 scanf("%d", &option);
                 if (option == -1){
@@ -603,6 +607,7 @@ int main(int argc, char* argv[]){
                     sscanf(buffer, "+OK %s octets\r\n", d);
                     size = atoi(d);
                     // printf("Size = %d\n", size);
+                    printf("\n--------------------------------------------------\n");
                     while(size--){
                         memset(buffer, '\0', MAXSIZE);
                         n = recv(cli_sock, buffer, 1, 0);
@@ -670,4 +675,3 @@ char *getLocalIP() {
     struct hostent *host = gethostbyname(buffer);
     return inet_ntoa(*((struct in_addr *)host->h_addr_list[0]));
 }
-
